@@ -8,46 +8,17 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
 /**
- * @title ExternalAsset
- * @dev This is a simple ERC20 contract that will be used to represent assets that
- * have been invested externally.
- */
-contract ExternalAsset is ERC20, ERC20Burnable, Ownable {
-    uint8 private _decimals;
-
-    constructor(uint8 decimals_) ERC20("External Asset", "EXT") {
-        _decimals = decimals_;
-    }
-
-    function decimals() public view virtual override returns (uint8) {
-        return _decimals;
-    }
-
-    function mint(address to, uint256 amount) public onlyOwner {
-        _mint(to, amount);
-    }
-
-    function burnFrom(
-        address account,
-        uint256 amount
-    ) public override onlyOwner {
-        _burn(account, amount);
-    }
-}
-
-/**
  * @title TokenizedVault
  * @dev This contract is a concrete implementation of ERC4626.
  */
 contract TokenizedVault is ERC4626, Ownable {
     string private _name;
     string private _symbol;
-    ExternalAsset private _externalAsset;
+    uint256 private _totalExternalAssets;
     uint8 private _decimals;
 
     /**
-     * @dev Sets the values for {name} and {symbol}, initializes the underlying
-     * asset with the value of {asset_}
+     * @dev Sets the values for {name}, {symbol} and {_decimals}
      */
     constructor(
         IERC20 asset_,
@@ -56,11 +27,8 @@ contract TokenizedVault is ERC4626, Ownable {
     ) ERC4626(asset_) ERC20(name_, symbol_) Ownable() {
         _name = name_;
         _symbol = symbol_;
+        _totalExternalAssets = 0;
         _decimals = asset_.decimals();
-        _externalAsset = new ExternalAsset(_decimals);
-        // Transfer ownership of _externalAsset to this contract
-        // - so only this contract can mint/burn external assets.
-        _externalAsset.transferOwnership(address(this));
     }
 
     /**
@@ -95,9 +63,8 @@ contract TokenizedVault is ERC4626, Ownable {
      * For example, if `decimals` equals `2`, a balance of `505` tokens should
      * be displayed to a user as `5,05` (`505 / 10 ** 2`).
      *
-     * Tokens usually opt for a value of 18, imitating the relationship between
-     * Ether and Wei. This is the value {ERC20} uses, unless this function is
-     * overridden;
+     * This function has been updated to return the value of `_decimals`,
+     * which is set to match the decimals of the underlying asset in the constructor.
      *
      * NOTE: This information is only used for _display_ purposes: it in
      * no way affects any of the arithmetic of the contract, including
