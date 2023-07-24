@@ -7,7 +7,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
-
 /**
  * @title TokenizedVault
  * @dev This contract is a concrete implementation of ERC4626.
@@ -16,9 +15,10 @@ contract TokenizedVault is ERC4626, Ownable {
     string private _name;
     string private _symbol;
     uint256 private _totalExternalAssets;
+    uint8 private _decimals;
 
     /**
-     * @dev Sets the values for {name} and {symbol}
+     * @dev Sets the values for {name}, {symbol} and {_decimals}
      */
     constructor(
         IERC20 asset_,
@@ -28,6 +28,7 @@ contract TokenizedVault is ERC4626, Ownable {
         _name = name_;
         _symbol = symbol_;
         _totalExternalAssets = 0;
+        _decimals = asset_.decimals();
     }
 
     /**
@@ -56,22 +57,21 @@ contract TokenizedVault is ERC4626, Ownable {
     {
         return _symbol;
     }
-    
+
     /**
      * @dev Returns the amount of decimals used to get its user representation.
      * For example, if `decimals` equals `2`, a balance of `505` tokens should
      * be displayed to a user as `5,05` (`505 / 10 ** 2`).
      *
-     * Tokens usually opt for a value of 18, imitating the relationship between
-     * Ether and Wei. This is the value {ERC20} uses, unless this function is
-     * overridden;
+     * This function has been updated to return the value of `_decimals`,
+     * which is set to match the decimals of the underlying asset in the constructor.
      *
      * NOTE: This information is only used for _display_ purposes: it in
      * no way affects any of the arithmetic of the contract, including
      * {IERC20-balanceOf} and {IERC20-transfer}.
      */
     function decimals() public view virtual override(ERC4626) returns (uint8) {
-        return 18;
+        return _decimals;
     }
 
     /**
@@ -143,7 +143,7 @@ contract TokenizedVault is ERC4626, Ownable {
             _totalExternalAssets -= amount;
         } else {
             _totalExternalAssets = 0;
-        }               
+        }
     }
 
     // Used by owner of contract to set the external asset balance for testing purposes
@@ -152,5 +152,4 @@ contract TokenizedVault is ERC4626, Ownable {
         require(amount > 0, "Amount must be greater than zero");
         _totalExternalAssets = amount;
     }
-
 }
